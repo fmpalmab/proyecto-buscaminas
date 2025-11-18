@@ -29,7 +29,7 @@ Sigue estos pasos para ejecutar el juego en tu máquina local.
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone [https://github.com/fmpalmab/proyecto-buscaminas](https://github.com/fmpalmab/proyecto-buscaminas)
+    git clone https://github.com/fmpalmab/proyecto-buscaminas
     ```
 
 2.  **Navega a la carpeta del proyecto:**
