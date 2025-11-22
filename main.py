@@ -9,8 +9,8 @@ from juego_model import Tablero
 from interfaz_gui import MinesweeperGUI
 
 # --- Configuración Principal del Juego ---
-SIZE_X = 10
-SIZE_Y = 10
+SIZE_X = 4
+SIZE_Y = 4
 MINE_RATIO = 0.2 # x% de las celdas serán minas
 
 def main():
