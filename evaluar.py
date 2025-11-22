@@ -3,7 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from juego_model import Tablero, REWARDS
-from agente_qlearning import AgenteQLearning
+from agente import AgenteQLearning
 
 # --- CONFIGURACIÓN DE EVALUACIÓN ---
 CANTIDAD_PARTIDAS = 1000  # Cantidad de pruebas por jugador
