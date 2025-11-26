@@ -6,7 +6,7 @@ import numpy as np
 
 # CONFIGURACIÓN DE ENTRENAMIENTO
 EPISODIOS = 100000        # Aumentado para mejor aprendizaje
-SIZE = 4                 # Tablero pequeño (4x4)
+SIZE = 6                 # Tablero pequeño (4x4)
 MINAS_RATIO = 0.2
 SHOW_EVERY = 1000        # Recopilar métricas cada X episodios
 

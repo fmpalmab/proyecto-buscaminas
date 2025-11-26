@@ -9,9 +9,9 @@ from juego_model import Tablero
 from interfaz_gui import MinesweeperGUI
 
 # --- Configuración Principal del Juego ---
-SIZE_X = 4
-SIZE_Y = 4
-MINE_RATIO = 0.2 # x% de las celdas serán minas
+SIZE_X = 6
+SIZE_Y = 6
+MINE_RATIO = 0.15 # x% de las celdas serán minas
 
 def main():
     # 1. Crear la ventana principal de Tkinter

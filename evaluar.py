@@ -7,7 +7,7 @@ from agente import AgenteQLearning
 
 # --- CONFIGURACIÓN DE EVALUACIÓN ---
 CANTIDAD_PARTIDAS = 1000  # Cantidad de pruebas por jugador
-SIZE = 4                  # ¡Debe ser el mismo tamaño del entrenamiento!
+SIZE = 6                  # ¡Debe ser el mismo tamaño del entrenamiento!
 MINAS_RATIO = 0.2
 
 # --- AGENTE ALEATORIO (BASELINE) ---

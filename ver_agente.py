@@ -7,7 +7,7 @@ from agente import AgenteQLearning
 
 # --- CONFIGURACIÓN ---
 # ¡IMPORTANTE! Debe ser el MISMO tamaño usado en el entrenamiento (ej. 4)
-SIZE = 4       
+SIZE = 6       
 MINAS_RATIO = 0.2
 VELOCIDAD = 500  # Milisegundos entre cada movimiento (500ms = 0.5 seg)
 
