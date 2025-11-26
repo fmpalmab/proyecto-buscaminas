@@ -201,62 +201,88 @@ class Tablero:
 
     def get_estado_hashable(self):
         """
-        Genera una representación inmutable del tablero para usar como clave en Q-Learning.
-        -1: Oculto/Bandera
-        0-8: Revelado (número)
+        Genera representación inmutable.
+        -1: Oculto
+        -2: Bandera (NUEVO: Diferenciar bandera de oculto)
+        0-8: Revelado
         """
         estado = []
         for x in range(self.size_x):
             fila = []
             for y in range(self.size_y):
                 celda = self.celdas[x][y]
-                if celda.estado == STATE_DEFAULT or celda.estado == STATE_FLAGGED:
-                    fila.append(-1)
+                if celda.estado == STATE_DEFAULT:
+                    fila.append(-1)     # Oculto
+                elif celda.estado == STATE_FLAGGED:
+                    fila.append(-2)     # Bandera (CRUCIAL para aprender)
                 else:
                     fila.append(celda.minas_vecinas)
             estado.append(tuple(fila))
         return tuple(estado)
 
+    def _auto_flag(self):
+        """
+        Detecta minas obvias y coloca banderas automáticamente.
+        Regla: Si un número 'N' tiene 'N' vecinos ocultos+banderas, 
+        entonces los ocultos SON minas.
+        """
+        cambios = True
+        while cambios:
+            cambios = False
+            for x in range(self.size_x):
+                for y in range(self.size_y):
+                    celda = self.celdas[x][y]
+                    # Solo miramos celdas numéricas reveladas (estado >= 0)
+                    if celda.estado >= 0: 
+                        vecinos = self.get_vecinos(x, y)
+                        ocultos = [v for v in vecinos if v.estado == STATE_DEFAULT]
+                        banderas = [v for v in vecinos if v.estado == STATE_FLAGGED]
+                        
+                        total_indeterminados = len(ocultos) + len(banderas)
+                        
+                        # Si la cantidad de minas coincide con los vecinos disponibles
+                        if celda.minas_vecinas == total_indeterminados and len(ocultos) > 0:
+                            for v in ocultos:
+                                v.estado = STATE_FLAGGED # Poner bandera
+                                self.conteo_banderas += 1
+                                cambios = True # Repetir bucle por si esto desbloquea otras lógicas
+
+    # 2. MODIFICA EL MÉTODO STEP PARA LLAMAR A _AUTO_FLAG
     def step(self, x, y):
-        """
-        Ejecuta una acción del agente y devuelve (estado, recompensa, terminado).
-        Maneja internamente la lógica de 'Primer Clic Seguro' y 'Game Over'.
-        """
         celda = self.get_celda(x, y)
         
-        # 1. Acción Inválida
+        # Validación básica
         if celda is None or celda.estado == STATE_CLICKED or celda.estado == STATE_FLAGGED:
             return self.get_estado_hashable(), REWARDS['no_progress'], self.juego_terminado
 
-        # 2. Primer Movimiento (Generación diferida de minas)
         if self.primer_movimiento:
             self._generar_minas_seguras(x, y)
             self.primer_movimiento = False
 
-        # 3. Verificar si pisó mina
         if celda.es_mina:
             self.juego_terminado = True
             self.victoria = False
-            celda.estado = STATE_CLICKED # Mostrar la mina al agente
+            celda.estado = STATE_CLICKED
             return self.get_estado_hashable(), REWARDS['lose'], True
 
-        # 4. Jugada normal (segura)
+        # --- Lógica de Recompensa ---
         reveladas_antes = self.conteo_reveladas
         
-        # --- LÓGICA NUEVA: DETECTAR SI ES ADIVINANZA ---
-        # Verificar si la celda tiene al menos un vecino revelado (pista)
+        # Verificar pistas antes de revelar
         tiene_pista_cerca = False
         for v in self.get_vecinos(x, y):
-            if v.estado == STATE_CLICKED: # Si hay un número cerca
+            if v.estado >= 0: # Si es un número visible
                 tiene_pista_cerca = True
                 break
-        # -----------------------------------------------
 
-        self.revelar_celda(x, y) 
+        self.revelar_celda(x, y)
+        
+        # >>> NUEVO: EJECUTAR AUTO-FLAG DESPUÉS DE REVELAR <<<
+        self._auto_flag()
+        # ----------------------------------------------------
 
-        # 5. Calcular Recompensa
         reward = 0
-        done = self.juego_terminado
+        done = self.juego_terminado # _chequear_victoria se llama dentro de revelar_celda
 
         if self.victoria:
             reward = REWARDS['win']
@@ -265,10 +291,8 @@ class Tablero:
         else:
             if self.conteo_reveladas > reveladas_antes:
                 if not tiene_pista_cerca:
-                    # ¡CASTIGO! Reveló celda pero fue suerte (adivinanza a ciegas)
-                    reward = REWARDS['guess'] # Asegúrate de que esto sea negativo (ej. -0.5)
+                    reward = REWARDS['guess'] 
                 else:
-                    # PREMIO: Jugada lógica (estaba cerca de una pista)
                     diff = self.conteo_reveladas - reveladas_antes
                     reward = REWARDS['progress'] * (1 + (diff * 0.1))
             else:
