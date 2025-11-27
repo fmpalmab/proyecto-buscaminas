@@ -3,12 +3,12 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from juego_model import Tablero, REWARDS
-from agente import AgenteQLearning
+from agente import AgenteQLearningAproximado
 
 # --- CONFIGURACIÓN DE EVALUACIÓN ---
 CANTIDAD_PARTIDAS = 1000  # Cantidad de pruebas por jugador
 SIZE = 6                  # ¡Debe ser el mismo tamaño del entrenamiento!
-MINAS_RATIO = 0.2
+MINAS_RATIO = 0.15
 
 # --- AGENTE ALEATORIO (BASELINE) ---
 class AgenteAleatorio:
@@ -68,7 +68,7 @@ def ejecutar_prueba(nombre, agente, n_partidas):
 def main():
     # 1. Cargar Agente Entrenado
     acciones = [(x, y) for x in range(SIZE) for y in range(SIZE)]
-    agente_ia = AgenteQLearning(actions=acciones)
+    agente_ia = AgenteQLearningAproximado(actions=acciones)
     try:
         agente_ia.cargar_agente("mi_agente_entrenado.pkl")
         print(">> IA Cargada Exitosamente.")
@@ -85,8 +85,8 @@ def main():
 
     # 4. Datos Humanos (Simulados o ingresa los tuyos reales aquí)
     # Si juegas 10 partidas y ganas 8, pon 80.0
-    win_human = 85.0  
-    pasos_human = 5.0 
+    win_human = 80.0  
+    pasos_human = 9.0 
 
     # 5. Mostrar Tabla
     print("\n" + "="*60)

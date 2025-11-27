@@ -1,93 +1,124 @@
 # ver_agente.py
 import tkinter as tk
-import time
-from juego_model import Tablero
-from interfaz_gui import MinesweeperGUI
-from agente import AgenteQLearning
+from juego_model import Tablero, STATE_FLAGGED
+from interfaz_gui import MinesweeperGUI, BTN_CLICK
+from agente import AgenteQLearningAproximado 
 
 # --- CONFIGURACIÓN ---
-# ¡IMPORTANTE! Debe ser el MISMO tamaño usado en el entrenamiento (ej. 4)
 SIZE = 6       
-MINAS_RATIO = 0.2
-VELOCIDAD = 500  # Milisegundos entre cada movimiento (500ms = 0.5 seg)
+MINAS_RATIO = 0.15 
+VELOCIDAD = 500  # Tiempo de espera entre acciones (ms)
 
 class AgenteGUI(MinesweeperGUI):
-    """
-    Versión modificada de la GUI que permite al agente jugar automáticamente.
-    """
     def __init__(self, root, tablero, agente):
         super().__init__(root, tablero)
         self.agente = agente
         self.jugando_auto = False
 
     def iniciar_demo(self):
-        """Arranca el bucle del agente."""
         self.jugando_auto = True
         self.siguiente_movimiento()
 
     def siguiente_movimiento(self):
-        """Pide al agente una acción y la ejecuta en la GUI."""
+        """Ciclo principal de decisión del agente."""
         if not self.jugando_auto or self.tablero.juego_terminado:
             return
 
-        # 1. Obtener estado actual del tablero
+        # 1. Obtener estado
         estado = self.tablero.get_estado_hashable()
         
-        # 2. Desactivar exploración temporalmente (modo 'Explotación')
-        epsilon_original = self.agente.epsilon
+        # 2. Elegir acción (sin exploración)
+        epsilon_prev = self.agente.epsilon
         self.agente.epsilon = 0 
-        
-        # 3. El agente decide coordenadas (x, y)
         x, y = self.agente.elegir_accion(estado)
+        self.agente.epsilon = epsilon_prev
         
-        # Restaurar epsilon
-        self.agente.epsilon = epsilon_original
-
-        # 4. Imprimir en consola qué decidió (opcional)
         print(f"🤖 Agente decide click en: ({x}, {y})")
 
-        # 5. Ejecutar el click en la GUI
-        # Llamamos directamente al método onClick de la clase padre
+        # 3. Ejecutar Click
         self.onClick(x, y)
 
-        # 6. Programar el siguiente paso si el juego sigue vivo
-        if not self.tablero.juego_terminado:
+        if self.tablero.juego_terminado:
+            return
+
+        # --- LÓGICA DE AUTO-FLAG ANIMADA ---
+        
+        # A. Detectar qué banderas YA existían antes del auto-flag
+        banderas_previas = set()
+        for i in range(self.tablero.size_x):
+            for j in range(self.tablero.size_y):
+                if self.tablero.get_celda(i, j).estado == STATE_FLAGGED:
+                    banderas_previas.add((i, j))
+
+        # B. Ejecutar la lógica interna (el modelo se actualiza instantáneamente)
+        self.tablero._auto_flag()
+
+        # C. Detectar cuáles son las NUEVAS banderas
+        nuevas_banderas = []
+        for i in range(self.tablero.size_x):
+            for j in range(self.tablero.size_y):
+                celda = self.tablero.get_celda(i, j)
+                if celda.estado == STATE_FLAGGED and (i, j) not in banderas_previas:
+                    nuevas_banderas.append((i, j))
+
+        # D. Si hay nuevas banderas, iniciar animación. Si no, seguir jugando.
+        if nuevas_banderas:
+            # Esperar un turno antes de empezar a poner banderas
+            self.root.after(VELOCIDAD, lambda: self.animar_banderas(nuevas_banderas))
+        else:
             self.root.after(VELOCIDAD, self.siguiente_movimiento)
 
+    def animar_banderas(self, lista_banderas):
+        """
+        Función recursiva que pone una bandera, espera, y llama a la siguiente.
+        """
+        if not lista_banderas or self.tablero.juego_terminado:
+            # Si se acabaron las banderas, volvemos al bucle principal del agente
+            self.siguiente_movimiento()
+            return
+
+        # Sacar la siguiente coordenada de la lista
+        x, y = lista_banderas.pop(0)
+        
+        # Actualizar visualmente esa celda específica
+        print(f"🚩 Auto-Flag en: ({x}, {y})")
+        self.actualizar_boton(x, y)
+        self.refreshLabels()
+        
+        # Desvincular el clic (seguridad)
+        try:
+            self.botones[x][y].unbind(BTN_CLICK)
+        except:
+            pass
+
+        # Programar la siguiente bandera con el retraso VELOCIDAD
+        self.root.after(VELOCIDAD, lambda: self.animar_banderas(lista_banderas))
+
     def restart(self):
-        """Sobrescribimos reiniciar para que el agente siga jugando tras el Game Over."""
         super().restart()
         if self.jugando_auto:
-            # Esperar un poco antes de empezar la nueva partida
             self.root.after(1000, self.siguiente_movimiento)
 
 def main():
-    # 1. Configurar Ventana
     root = tk.Tk()
     root.title(f"Demo Agente Buscaminas ({SIZE}x{SIZE})")
 
-    # 2. Inicializar Tablero y Agente
+    # Inicializar
     tablero = Tablero(SIZE, SIZE, MINAS_RATIO)
-    acciones_posibles = [(x, y) for x in range(SIZE) for y in range(SIZE)]
+    acciones = [(x, y) for x in range(SIZE) for y in range(SIZE)]
+    agente = AgenteQLearningAproximado(actions=acciones)
     
-    agente = AgenteQLearning(actions=acciones_posibles)
-    
-    # 3. Cargar Cerebro
-    nombre_archivo = "mi_agente_entrenado.pkl"
+    # Cargar
     try:
-        agente.cargar_agente(nombre_archivo)
-        print(f"✅ {nombre_archivo} cargado exitosamente.")
-    except FileNotFoundError:
-        print(f"❌ ERROR: No se encontró '{nombre_archivo}'.")
-        print("   Asegúrate de ejecutar 'entrenar.py' primero.")
+        agente.cargar_agente("mi_agente_entrenado.pkl")
+        print("✅ Agente cargado.")
+    except:
+        print("❌ Error cargando agente.")
         return
 
-    # 4. Iniciar la GUI Especial
+    # Correr
     app = AgenteGUI(root, tablero, agente)
-    
-    # Darle 1 segundo al usuario para ver la ventana antes de empezar
     root.after(1000, app.iniciar_demo)
-
     root.mainloop()
 
 if __name__ == "__main__":

@@ -131,3 +131,14 @@ class AgenteQLearningAproximado:
         import pickle
         with open(filename, "wb") as f:
             pickle.dump(self.weights, f)
+    
+    def cargar_agente(self, filename="agente_linear.pkl"):
+        import pickle
+        try:
+            with open(filename, "rb") as f:
+                self.weights = pickle.load(f)
+            print(f"Modelo cargado exitosamente desde {filename}")
+        except FileNotFoundError:
+            print(f"No se encontró el archivo {filename}. Se continuará con pesos iniciales.")
+        except Exception as e:
+            print(f"Error al cargar el agente: {e}")
