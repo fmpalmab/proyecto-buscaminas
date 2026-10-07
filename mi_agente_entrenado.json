@@ -1,0 +1,22 @@
+{
+  "version": "2.0",
+  "feature_names": [
+    "bias",
+    "vecinos_ocultos",
+    "vecinos_bandera",
+    "tiene_pista_cerca",
+    "suma_pistas",
+    "vecino_satisfecho"
+  ],
+  "weights": [
+    59.3976474327016,
+    -60.421264069409276,
+    -0.6631682173329341,
+    -43.985631267512154,
+    0.7867905889514181,
+    25.405578265057784
+  ],
+  "epsilon": 0.9,
+  "alpha": 0.01,
+  "gamma": 0.9
+}

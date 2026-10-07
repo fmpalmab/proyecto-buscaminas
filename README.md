@@ -1,110 +1,166 @@
-# Proyecto Buscaminas (Minesweeper) + Agente IA
+# 💣 Buscaminas (Minesweeper) + Agentes IA (RL & CSP)
 
-Este repositorio contiene una implementación clásica del juego Buscaminas desarrollada en Python 3 utilizando la librería gráfica `Tkinter`. Además, el proyecto ha sido extendido con un **Agente de Inteligencia Artificial** basado en Aprendizaje por Refuerzo (Q-Learning Aproximado) capaz de aprender a resolver el tablero por sí mismo.
+[![CI](https://github.com/fmpalmab/proyecto-buscaminas/actions/workflows/ci.yml/badge.svg)](https://github.com/fmpalmab/proyecto-buscaminas/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: standard](https://img.shields.io/badge/code%20style-pep8-green.svg)](https://pep8.org/)
 
-El proyecto fue desarrollado como parte del **Proyecto N°2** del curso **EL4203-2: Programación Avanzada** de la Facultad de Ciencias Físicas y Matemáticas (FCFM) de la Universidad de Chile.
+Implementación moderna del clásico juego **Buscaminas (Minesweeper)** desarrollada en Python con arquitectura desacoplada, interfaz gráfica en `Tkinter`, modo consola ASCII headless, y múltiples agentes de **Inteligencia Artificial**:
+1. **Agente Q-Learning Aproximado:** Aprendizaje por Refuerzo con Aproximación Lineal de Funciones.
+2. **Agente Deductivo CSP:** Solucionador determinista basado en Satisfacción de Restricciones.
+3. **Línea Base Aleatoria:** Agente estocástico para contraste empírico.
 
 ---
 
-## 🚀 Cómo Empezar
+## 🏗️ Arquitectura del Proyecto
 
-Sigue estos pasos para ejecutar el juego o entrenar al agente en tu máquina local.
+El código está estructurado como un paquete Python estándar (`buscaminas`), manteniendo compatibilidad total con los scripts raíz originales:
 
-### 1. Prerrequisitos
+```
+proyecto-buscaminas/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # Pipeline de integración continua (Pytest en 3.10, 3.11, 3.12)
+├── buscaminas/                  # Paquete principal modular
+│   ├── __init__.py              # Exportaciones públicas de API
+│   ├── __main__.py              # Punto de entrada ejecutable (python -m buscaminas)
+│   ├── agent.py                 # Agentes RL (Q-Learning), Heurístico (CSP) y Aleatorio
+│   ├── cli.py                   # Interfaz de línea de comandos unificada
+│   ├── evaluator.py             # Rutinas de benchmarking y generación de gráficos
+│   ├── gui.py                   # Interfaz Tkinter desacoplada con soporte headless
+│   ├── model.py                 # Modelo lógico, flood-fill, auto-flagging y rewards RL
+│   └── trainer.py               # Bucle de entrenamiento y guardado de pesos
+├── images/                      # Sprites gráficos del juego (.gif)
+├── tests/                       # Suite de pruebas unitarias (Pytest)
+│   ├── test_agent.py
+│   ├── test_cli.py
+│   ├── test_evaluator.py
+│   ├── test_heuristics.py
+│   └── test_model.py
+├── pyproject.toml               # Configuración de empaquetado moderno (PEP 517/621)
+├── mi_agente_entrenado.pkl      # Pesos serializados del agente RL (pickle)
+├── mi_agente_entrenado.json     # Pesos y metadatos exportados en formato JSON legible
+├── comparacion_final.png        # Gráfico comparativo de desempeño entre agentes
+├── metricas_entrenamiento.png   # Evolución de win rate, recompensas y decaimiento de epsilon
+├── main.py                      # Shim compatible: Ejecutar juego interactivo
+├── entrenar.py                  # Shim compatible: Entrenar agente RL
+├── evaluar.py                   # Shim compatible: Ejecutar benchmark cuantitativo
+└── ver_agente.py                # Shim compatible: Demo en tiempo real en GUI
+```
 
-* **Python 3:** El juego está escrito en Python 3.
-* **Tkinter:** Librería estándar de GUI. Generalmente viene preinstalada con Python.
-* **Librerías para la IA:** Para ejecutar el agente y generar los gráficos, necesitas instalar las siguientes dependencias:
-    ```bash
-    pip install numpy matplotlib
-    ```
-* **Imágenes (¡Importante!):** El juego **requiere** la carpeta `images/` con todos los archivos `.gif` (`tile_plain.gif`, `tile_1.gif`, etc.) en el mismo directorio que los scripts para funcionar.
+---
 
-### 2. Instalación
+## ⚡ Instalación Rápida
 
-1.  **Clona el repositorio:**
-    ```bash
-    git clone [https://github.com/fmpalmab/proyecto-buscaminas](https://github.com/fmpalmab/proyecto-buscaminas)
-    ```
-2.  **Navega a la carpeta del proyecto:**
-    ```bash
-    cd proyecto-buscaminas
-    ```
+Requiere **Python 3.10+**.
+
+```bash
+# Clonar repositorio
+git clone https://github.com/fmpalmab/proyecto-buscaminas.git
+cd proyecto-buscaminas
+
+# Instalar dependencias base
+pip install -e .
+
+# O instalar con dependencias de desarrollo para pruebas
+pip install -e ".[dev]"
+```
 
 ---
 
 ## 🎮 Modos de Ejecución
 
-Puedes ejecutar el proyecto en modo manual (humano) o utilizar los scripts de Inteligencia Artificial.
-
-### A. Jugar Manualmente
-Ejecuta el archivo principal para abrir la interfaz clásica:
+### 1. Interfaz de Comandos Unificada (`buscaminas`)
 
 ```bash
-python3 main.py
+# Jugar en interfaz gráfica (Tkinter)
+python -m buscaminas --play
+
+# Jugar en modo terminal ASCII (ideal para SSH / entornos headless)
+python -m buscaminas --ascii
+
+# Ver a la IA resolver en modo terminal ASCII paso a paso
+python -m buscaminas --auto-ascii
+
+# Demostración gráfica del agente resolviendo el tablero en tiempo real
+python -m buscaminas --demo
+
+# Entrenar el agente de Q-Learning con parámetros personalizados
+python -m buscaminas --train --episodes 10000 --size 6 --mines 0.15
+
+# Evaluar cuantitativamente todos los agentes y generar reporte
+python -m buscaminas --eval --eval-games 1000 --size 6 --mines 0.15
 ```
-* **Clic Izquierdo:** Revela una celda.
-* **Clic Derecho:** Coloca o quita una bandera.
-* **Objetivo:** Revelar todas las celdas sin minas.
 
-### B. Inteligencia Artificial (Q-Learning)
+### 2. Scripts Raíz (Compatibilidad Histórica)
 
-El proyecto incluye un agente capaz de aprender a jugar mediante Q-Learning con Aproximación de Funciones Lineales.
+Todos los comandos originales continúan funcionando exactamente igual:
 
-#### 1. Entrenar al Agente
-Ejecuta el script de entrenamiento para que el agente juegue miles de partidas y aprenda.
 ```bash
-python3 entrenar.py
+python main.py        # Abrir juego manual
+python entrenar.py    # Entrenar agente Q-Learning
+python evaluar.py     # Comparar agentes contra baseline aleatoria
+python ver_agente.py  # Ver demostración gráfica de la IA
 ```
-* Esto generará dos archivos:
-    * `mi_agente_entrenado.pkl`: El "cerebro" del agente (sus pesos guardados).
-    * `metricas_entrenamiento.png`: Un gráfico mostrando su progreso (Win Rate).
-
-#### 2. Ver al Agente Jugar (Demo)
-Una vez entrenado (o si ya tienes el archivo `.pkl`), puedes ver al agente jugar en tiempo real en la interfaz gráfica.
-```bash
-python3 ver_agente.py
-```
-* El agente controlará el mouse y tomará decisiones.
-* Incluye una animación de "Auto-Flag" para marcar minas evidentes.
-
-#### 3. Evaluar Rendimiento
-Compara el desempeño del agente entrenado contra un agente aleatorio.
-```bash
-python3 evaluar.py
-```
-* Generará un reporte en consola y el gráfico `comparacion_final.png`.
 
 ---
 
-## 📂 Estructura del Proyecto
+## 🧠 Algoritmos e Inteligencia Artificial
 
-El código sigue un patrón Modelo-Vista-Controlador (MVC) y separa la lógica de IA:
+### Q-Learning Aproximado (Linear Function Approximation)
 
-### Núcleo del Juego
-* **`juego_model.py` (Modelo):** Contiene la lógica pura del tablero, reglas, estados y recompensas.
-* **`interfaz_gui.py` (Vista):** Maneja la interfaz gráfica `Tkinter`, imágenes y eventos.
-* **`main.py`:** Punto de entrada para el juego manual.
+Dado que el espacio de estados de Buscaminas es combinatoriamente inmenso, el agente no utiliza tablas `Q(s, a)` discretas, sino una **aproximación lineal ponderada**:
 
-### Inteligencia Artificial
-* **`agente.py`:** Implementación de la clase `AgenteQLearningAproximado`. Define las *features* (vecinos ocultos, banderas, vecinos satisfechos) y el algoritmo de aprendizaje.
-* **`entrenar.py`:** Script para entrenar al agente masivamente (sin GUI).
-* **`ver_agente.py`:** Script que conecta al agente con la GUI para demostración visual.
-* **`evaluar.py`:** Script para generar estadísticas comparativas.
+$$Q(s, a) = \sum_{i=0}^{5} w_i \cdot f_i(s, a)$$
+
+Donde cada $f_i(s, a)$ corresponde a una característica topológica local de la celda elegida $(x, y)$:
+- **$f_0$ (Bias):** Término independiente constante ($1.0$).
+- **$f_1$ (Vecinos Ocultos):** Proporción de casillas contiguas no descubiertas.
+- **$f_2$ (Vecinos Bandera):** Cantidad ponderada de banderas adyacentes.
+- **$f_3$ (Presencia de Pista):** Indicador binario si la celda limita con un número revelado.
+- **$f_4$ (Suma de Pistas):** Suma escalar de las restricciones numéricas circundantes.
+- **$f_5$ (Vecino Satisfecho):** Activación fuerte si algún número adyacente ya tiene todas sus minas marcadas por banderas (indicando que la celda es matemáticamente segura).
+
+La regla de actualización de pesos por gradiente descendente temporal TD(0) es:
+
+$$w_i \leftarrow w_i + \alpha \cdot \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right] \cdot f_i(s, a)$$
+
+### Solucionador Deductivo CSP (Constraint Satisfaction)
+
+El agente heurístico modela el tablero local como un sistema de ecuaciones lineales booleanas sobre las celdas ocultas frontera:
+
+$$\sum_{c \in \text{Ocultos}(v)} c = \text{Pista}(v) - \text{Banderas}(v)$$
+
+Aplica:
+1. **Regla de Vecino Satisfecho:** Si $\text{Pista}(v) = \text{Banderas}(v)$, cualquier vecino oculto es seguro ($P(\text{mina}) = 0$).
+2. **Deducción de Subconjuntos:** Si los vecinos ocultos del conjunto $A$ están contenidos en $B$ con idéntica demanda de minas residuales, la diferencia $B \setminus A$ es 100% segura.
+3. **Mínimo Riesgo:** En caso de requerir una conjetura estocástica forzada, minimiza la probabilidad condicional de mina.
 
 ---
 
-## 🧠 Sobre el Agente
+## 📊 Resultados y Benchmark
 
-El agente no memoriza el tablero (lo cual es imposible dada la cantidad de combinaciones), sino que utiliza **Aproximación de Funciones Lineales**. Evalúa cada posible movimiento basándose en características locales:
+Evaluación sobre **1,000 partidas** en tablero $6 \times 6$ con 15% de minas:
 
-1.  **Bias:** Sesgo base.
-2.  **Vecinos Ocultos:** Cantidad de celdas no reveladas alrededor.
-3.  **Vecinos Bandera:** Cantidad de minas marcadas alrededor.
-4.  **Pistas:** Si la celda tiene números cerca.
-5.  **Vecino Satisfecho (Lógica Clave):** Detecta si una celda numérica adyacente ya tiene todas sus minas identificadas, lo que hace seguro el movimiento.
+| Agente | Tipo | Tasa de Victoria | Pasos Promedio |
+|---|---|:---:|:---:|
+| **Agente Aleatorio** | Baseline estocástica | ~11 - 17% | 5.4 - 21.7 |
+| **Agente IA (Q-Learning)** | Aprendizaje por Refuerzo | **~65 - 77%** | 7.4 - 8.3 |
+| **Agente Heurístico (CSP)** | Deducción lógica determinista | **~77 - 82%** | 9.0 - 9.3 |
+| **Humano (Referencia)** | Jugador experimentado | ~80% | ~9.0 |
 
 ---
 
-## 👥 Autores
-Proyecto desarrollado para el curso EL4203-2.
+## 🧪 Pruebas Automatizadas
+
+La suite de pruebas cubre modelos, lógica de reglas, flood-fill, auto-flagging, serialización, agentes y CLI:
+
+```bash
+pytest -v
+```
+
+---
+
+## 📜 Licencia
+
+Distribuido bajo la Licencia **MIT**. Desarrollado originalmente en la FCFM, Universidad de Chile.
